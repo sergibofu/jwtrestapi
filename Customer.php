@@ -9,7 +9,7 @@
 		private $updatedOn;
 		private $createdBy;
 		private $createdOn;
-		private $tableName = 'customers';
+		private $tableName = 'customer';
 		private $dbConn;
 
 		function setId($id) { $this->id = $id; }

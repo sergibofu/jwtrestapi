@@ -1,4 +1,4 @@
-<?php
+<?php 
 
     require_once('constants.php');
     require_once('php-jwt-master\src\JWT.php');
@@ -8,6 +8,7 @@
         protected $request;
         protected $serviceName;
         protected $param;
+        protected $userId;
 
         public function __construct(){
 
@@ -151,6 +152,42 @@
 	        }
 	        $this->throwError( ATHORIZATION_HEADER_NOT_FOUND, 'Access Token Not found');
 	    }
+
+        public function validateToken(){
+
+            try{
+                //we extract our token form the header
+                $token = $this->getBearerToken();
+   
+                //we decode our payload
+                $payload = Firebase\JWT\JWT::decode($token, SECRETE_KEY, ['HS256']);
+   
+   
+               //we prepare our statement and bind our parameters
+               $stmt = $this->dbConn->prepare("SELECT * FROM users WHERE id = :id");
+               $stmt->bindParam(":id", $payload->userId);
+    
+   
+               //we execute our params
+               $stmt->execute();
+               $user = $stmt->fetch(PDO::FETCH_ASSOC);
+   
+               //we check if the id has matched with some user
+               if(!is_array($user)){
+                   $this->throwError(INVALID_USER_PASS, "This user isn't found on our database");
+               }
+   
+               //we check if the user is activated
+               if($user['active'] == 0){
+                   $this->throwError(USER_NOT_ACTIVE, "User is not activated. Please contact to admin");
+               }
+
+               //we set our global id variable to the id reived
+               $this->userId = $payload->userId;
+            } catch(Exception $e){
+               $this->throwError(ACCESS_TOKEN_ERRORS, $e->getMessage());
+            }
+        }
 
     }
 
